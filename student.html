@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aluno - Sistema de Presença QR</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Registro de Presença</h1>
+            <nav>
+                <a href="index.html" class="btn btn-secondary">Voltar ao Início</a>
+            </nav>
+        </header>
+        
+        <main>
+            <section id="sessionValidation" class="validation-section">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Validando sessão...</p>
+                </div>
+            </section>
+            
+            <section id="sessionInfo" class="session-info-section" style="display: none;">
+                <div id="sessionDetails" class="info-card"></div>
+            </section>
+            
+            <section id="studentForm" class="form-section" style="display: none;">
+                <h2>Registrar Presença</h2>
+                <form id="attendanceForm" class="form">
+                    <div class="form-group">
+                        <label for="studentName">Nome Completo:</label>
+                        <input type="text" id="studentName" name="studentName" required 
+                               placeholder="Digite seu nome completo">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="studentId">Matrícula:</label>
+                        <input type="text" id="studentId" name="studentId" required 
+                               placeholder="Digite sua matrícula" pattern="[A-Za-z0-9]+"
+                               title="Use apenas letras e números">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Confirmar Presença</button>
+                </form>
+            </section>
+            
+            <section id="successMessage" class="success-section" style="display: none;">
+                <div class="success-card">
+                    <div class="success-icon">✅</div>
+                    <h2>Presença Confirmada!</h2>
+                    <div id="confirmationDetails"></div>
+                    <a href="index.html" class="btn btn-primary">Finalizar</a>
+                </div>
+            </section>
+            
+            <section id="errorMessage" class="error-section" style="display: none;">
+                <div class="error-card">
+                    <div class="error-icon">❌</div>
+                    <h2>Erro no Registro</h2>
+                    <div id="errorDetails"></div>
+                    <a href="index.html" class="btn btn-secondary">Voltar ao Início</a>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <script src="script.js"></script>
+    <script>
+        // Student page specific functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('session');
+            
+            if (!sessionId) {
+                showError('Código QR inválido', 'Sessão não encontrada. Verifique se o código QR está correto.');
+                return;
+            }
+            
+            validateSession(sessionId);
+            
+            // Setup form handler
+            document.getElementById('attendanceForm').addEventListener('submit', handleAttendanceForm);
+        });
+        
+        function validateSession(sessionId) {
+            const session = getSession(sessionId);
+            
+            if (!session) {
+                showError('Sessão não encontrada', 'O código QR escaneado não corresponde a uma sessão válida.');
+                return;
+            }
+            
+            // Check if session has expired
+            const now = new Date();
+            const expiresAt = new Date(session.expiresAt);
+            
+            if (now > expiresAt) {
+                showError('Sessão Expirada', 'O código QR expirou. Solicite um novo código ao professor.');
+                return;
+            }
+            
+            // Session is valid, show session info and form
+            showSessionInfo(session);
+            showStudentForm();
+            hideValidation();
+        }
+        
+        function showSessionInfo(session) {
+            const sessionDetails = document.getElementById('sessionDetails');
+            const timeLeft = Math.max(0, Math.floor((new Date(session.expiresAt) - new Date()) / 1000 / 60));
+            
+            sessionDetails.innerHTML = `
+                <h3>Informações da Aula</h3>
+                <p><strong>Professor:</strong> ${session.professorName}</p>
+                <p><strong>Matéria:</strong> ${session.subject}</p>
+                <p><strong>Data/Hora:</strong> ${formatDateTime(session.createdAt)}</p>
+                <p><strong>Tempo Restante:</strong> ${timeLeft} minutos</p>
+            `;
+            
+            document.getElementById('sessionInfo').style.display = 'block';
+        }
+        
+        function showStudentForm() {
+            document.getElementById('studentForm').style.display = 'block';
+        }
+        
+        function hideValidation() {
+            document.getElementById('sessionValidation').style.display = 'none';
+        }
+        
+        function handleAttendanceForm(e) {
+            e.preventDefault();
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('session');
+            const session = getSession(sessionId);
+            
+            // Validate session again before submitting
+            if (!session || new Date() > new Date(session.expiresAt)) {
+                showError('Sessão Expirada', 'A sessão expirou durante o preenchimento do formulário.');
+                return;
+            }
+            
+            const formData = new FormData(e.target);
+            const attendanceData = {
+                id: generateAttendanceId(),
+                sessionId: sessionId,
+                studentName: formData.get('studentName'),
+                studentId: formData.get('studentId'),
+                timestamp: new Date().toISOString(),
+                professorName: session.professorName,
+                subject: session.subject,
+                sessionDate: session.createdAt
+            };
+            
+            // Check for duplicate attendance
+            if (checkDuplicateAttendance(sessionId, attendanceData.studentId)) {
+                showError('Presença Já Registrada', 'Sua presença já foi registrada nesta aula.');
+                return;
+            }
+            
+            // Save attendance
+            saveAttendance(attendanceData);
+            
+            // Show success message
+            showSuccess(attendanceData, session);
+        }
+        
+        function checkDuplicateAttendance(sessionId, studentId) {
+            const attendances = getAttendancesBySession(sessionId);
+            return attendances.some(attendance => attendance.studentId === studentId);
+        }
+        
+        function showSuccess(attendanceData, session) {
+            const confirmationDetails = document.getElementById('confirmationDetails');
+            
+            confirmationDetails.innerHTML = `
+                <div class="confirmation-info">
+                    <p><strong>Nome:</strong> ${attendanceData.studentName}</p>
+                    <p><strong>Matrícula:</strong> ${attendanceData.studentId}</p>
+                    <p><strong>Matéria:</strong> ${session.subject}</p>
+                    <p><strong>Professor:</strong> ${session.professorName}</p>
+                    <p><strong>Horário de Registro:</strong> ${formatDateTime(attendanceData.timestamp)}</p>
+                </div>
+            `;
+            
+            // Hide other sections
+            document.getElementById('sessionInfo').style.display = 'none';
+            document.getElementById('studentForm').style.display = 'none';
+            
+            // Show success message
+            document.getElementById('successMessage').style.display = 'block';
+        }
+        
+        function showError(title, message) {
+            const errorDetails = document.getElementById('errorDetails');
+            
+            errorDetails.innerHTML = `
+                <p><strong>${title}</strong></p>
+                <p>${message}</p>
+            `;
+            
+            // Hide other sections
+            document.getElementById('sessionValidation').style.display = 'none';
+            document.getElementById('sessionInfo').style.display = 'none';
+            document.getElementById('studentForm').style.display = 'none';
+            
+            // Show error message
+            document.getElementById('errorMessage').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

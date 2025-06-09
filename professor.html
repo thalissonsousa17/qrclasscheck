@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professor - Sistema de Presença QR</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Painel do Professor</h1>
+            <nav>
+                <a href="index.html" class="btn btn-secondary">Voltar ao Início</a>
+                <a href="attendance.html" class="btn btn-secondary">Ver Presenças</a>
+            </nav>
+        </header>
+        
+        <main>
+            <section class="form-section">
+                <h2>Criar Sessão de Presença</h2>
+                <form id="professorForm" class="form">
+                    <div class="form-group">
+                        <label for="professorName">Nome do Professor:</label>
+                        <input type="text" id="professorName" name="professorName" required 
+                               placeholder="Digite seu nome completo">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="subject">Matéria/Disciplina:</label>
+                        <input type="text" id="subject" name="subject" required 
+                               placeholder="Ex: Matemática, História, etc." list="subjects">
+                        <datalist id="subjects">
+                            <option value="Matemática">
+                            <option value="Português">
+                            <option value="História">
+                            <option value="Geografia">
+                            <option value="Ciências">
+                            <option value="Física">
+                            <option value="Química">
+                            <option value="Biologia">
+                            <option value="Inglês">
+                            <option value="Educação Física">
+                        </datalist>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="validity">Tempo de Validade (minutos):</label>
+                        <select id="validity" name="validity" required>
+                            <option value="5">5 minutos</option>
+                            <option value="10">10 minutos</option>
+                            <option value="15">15 minutos</option>
+                            <option value="20" selected>20 minutos</option>
+                            <option value="30">30 minutos</option>
+                            <option value="45">45 minutos</option>
+                            <option value="60">60 minutos</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Gerar Código QR</button>
+                </form>
+            </section>
+            
+            <section id="qrSection" class="qr-section" style="display: none;">
+                <h2>Código QR Gerado</h2>
+                <div class="qr-info">
+                    <div id="sessionInfo" class="session-info"></div>
+                    <div id="qrcode" class="qr-code"></div>
+                    <div id="countdown" class="countdown"></div>
+                    <div class="qr-instructions">
+                        <p><strong>Instruções:</strong></p>
+                        <ul>
+                            <li>Mostre este código QR para os alunos</li>
+                            <li>Os alunos devem escanear o código para registrar presença</li>
+                            <li>O código expira automaticamente após o tempo definido</li>
+                        </ul>
+                    </div>
+                    <button id="newSession" class="btn btn-secondary">Criar Nova Sessão</button>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- QRCode.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="script.js"></script>
+    <script>
+        // Professor page specific functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const professorForm = document.getElementById('professorForm');
+            const qrSection = document.getElementById('qrSection');
+            const newSessionBtn = document.getElementById('newSession');
+            
+            professorForm.addEventListener('submit', handleProfessorForm);
+            newSessionBtn.addEventListener('click', resetForm);
+            
+            // Load saved form data if available
+            loadSavedFormData();
+        });
+        
+        function handleProfessorForm(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const sessionData = {
+                id: generateSessionId(),
+                professorName: formData.get('professorName'),
+                subject: formData.get('subject'),
+                validity: parseInt(formData.get('validity')),
+                createdAt: new Date().toISOString(),
+                expiresAt: new Date(Date.now() + parseInt(formData.get('validity')) * 60000).toISOString()
+            };
+            
+            // Save session data
+            saveSession(sessionData);
+            
+            // Save form data for next use
+            saveFormData(formData);
+            
+            // Generate QR code
+            generateQRCode(sessionData);
+            
+            // Show QR section and hide form
+            document.querySelector('.form-section').style.display = 'none';
+            qrSection.style.display = 'block';
+            
+            // Start countdown
+            startCountdown(sessionData.validity);
+        }
+        
+        function generateQRCode(sessionData) {
+            const qrContainer = document.getElementById('qrcode');
+            const sessionInfo = document.getElementById('sessionInfo');
+            
+            // Clear previous QR code
+            qrContainer.innerHTML = '';
+            
+            // Create student URL
+            const studentUrl = `${window.location.origin}/student.html?session=${sessionData.id}`;
+            
+            // Generate QR code
+            QRCode.toCanvas(qrContainer, studentUrl, {
+                width: 256,
+                margin: 2,
+                color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                }
+            }, function(error) {
+                if (error) {
+                    console.error('Erro ao gerar QR code:', error);
+                    qrContainer.innerHTML = '<p class="error">Erro ao gerar código QR</p>';
+                }
+            });
+            
+            // Display session info
+            sessionInfo.innerHTML = `
+                <div class="info-card">
+                    <h3>Informações da Sessão</h3>
+                    <p><strong>Professor:</strong> ${sessionData.professorName}</p>
+                    <p><strong>Matéria:</strong> ${sessionData.subject}</p>
+                    <p><strong>Data/Hora:</strong> ${formatDateTime(sessionData.createdAt)}</p>
+                    <p><strong>Validade:</strong> ${sessionData.validity} minutos</p>
+                    <p><strong>ID da Sessão:</strong> ${sessionData.id}</p>
+                </div>
+            `;
+        }
+        
+        function startCountdown(minutes) {
+            const countdownElement = document.getElementById('countdown');
+            let timeLeft = minutes * 60; // Convert to seconds
+            
+            const timer = setInterval(() => {
+                const mins = Math.floor(timeLeft / 60);
+                const secs = timeLeft % 60;
+                
+                countdownElement.innerHTML = `
+                    <div class="countdown-display">
+                        <h3>Tempo Restante</h3>
+                        <div class="time-display">
+                            <span class="time-value">${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}</span>
+                        </div>
+                    </div>
+                `;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    countdownElement.innerHTML = `
+                        <div class="countdown-display expired">
+                            <h3>Código Expirado</h3>
+                            <p>O código QR não é mais válido</p>
+                        </div>
+                    `;
+                }
+                
+                timeLeft--;
+            }, 1000);
+        }
+        
+        function resetForm() {
+            document.querySelector('.form-section').style.display = 'block';
+            document.getElementById('qrSection').style.display = 'none';
+        }
+        
+        function saveFormData(formData) {
+            const data = {
+                professorName: formData.get('professorName'),
+                subject: formData.get('subject')
+            };
+            localStorage.setItem('professorFormData', JSON.stringify(data));
+        }
+        
+        function loadSavedFormData() {
+            const savedData = localStorage.getItem('professorFormData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                document.getElementById('professorName').value = data.professorName || '';
+                document.getElementById('subject').value = data.subject || '';
+            }
+        }
+    </script>
+</body>
+</html>
