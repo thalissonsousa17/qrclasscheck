@@ -86,9 +86,14 @@
         });
         
         function validateSession(sessionId) {
+            console.log('Validando sessão:', sessionId);
+            console.log('Todas as sessões:', getAllSessions());
+            
             const session = getSession(sessionId);
+            console.log('Sessão encontrada:', session);
             
             if (!session) {
+                console.error('Sessão não encontrada para ID:', sessionId);
                 showError('Sessão não encontrada', 'O código QR escaneado não corresponde a uma sessão válida.');
                 return;
             }

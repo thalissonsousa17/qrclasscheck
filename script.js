@@ -527,22 +527,16 @@ function initializeSystem() {
     try {
         console.log('Inicializando sistema de presença QR...');
         
-        // Limpar sessões expiradas
-        const removedSessions = cleanupExpiredSessions();
-        if (removedSessions > 0) {
-            console.log(`${removedSessions} sessões expiradas foram removidas`);
-        }
-        
-        // Verificar integridade dos dados
+        // Verificar integridade dos dados sem limpar na inicialização
         const sessions = getAllSessions();
         const attendances = getAllAttendances();
         
         console.log(`Sistema inicializado: ${sessions.length} sessões, ${attendances.length} presenças`);
         
-        // Configurar limpeza automática a cada 5 minutos
+        // Configurar limpeza automática a cada 30 minutos (não na inicialização)
         setInterval(() => {
             cleanupExpiredSessions();
-        }, 5 * 60 * 1000);
+        }, 30 * 60 * 1000);
         
     } catch (error) {
         console.error('Erro na inicialização do sistema:', error);
