@@ -627,12 +627,7 @@ function debounce(func, wait) {
 // INICIALIZAÇÃO AUTOMÁTICA
 // ==========================================
 
-// Inicializar sistema quando o DOM estiver carregado
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeSystem);
-} else {
-    initializeSystem();
-}
+// Sistema será inicializado manualmente por cada página quando necessário
 
 // Exportar funções para uso global (se necessário)
 if (typeof window !== 'undefined') {

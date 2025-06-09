@@ -87,6 +87,9 @@
     <script>
         // Professor page specific functionality
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize system only on professor page
+            initializeSystem();
+            
             const professorForm = document.getElementById('professorForm');
             const qrSection = document.getElementById('qrSection');
             const newSessionBtn = document.getElementById('newSession');

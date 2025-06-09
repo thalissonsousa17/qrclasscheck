@@ -71,6 +71,7 @@
     <script>
         // Student page specific functionality
         document.addEventListener('DOMContentLoaded', function() {
+            // Don't initialize system here - just validate session
             const urlParams = new URLSearchParams(window.location.search);
             const sessionId = urlParams.get('session');
             
