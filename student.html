@@ -87,14 +87,26 @@
         });
         
         function validateSession(sessionId) {
-            console.log('Validando sessão:', sessionId);
-            console.log('Todas as sessões:', getAllSessions());
+            console.log('=== DEBUG SESSÃO ===');
+            console.log('1. Validando sessão ID:', sessionId);
+            
+            // Verificar localStorage diretamente
+            const rawSessions = localStorage.getItem('attendanceSessions');
+            console.log('2. localStorage raw:', rawSessions);
+            
+            const allSessions = getAllSessions();
+            console.log('3. Sessões recuperadas:', allSessions);
+            console.log('4. Número de sessões:', allSessions.length);
             
             const session = getSession(sessionId);
-            console.log('Sessão encontrada:', session);
+            console.log('5. Sessão específica encontrada:', session);
             
             if (!session) {
-                console.error('Sessão não encontrada para ID:', sessionId);
+                console.error('ERRO: Sessão não encontrada para ID:', sessionId);
+                console.log('6. Comparando IDs disponíveis:');
+                allSessions.forEach((s, index) => {
+                    console.log(`   ${index}: ${s.id}`);
+                });
                 showError('Sessão não encontrada', 'O código QR escaneado não corresponde a uma sessão válida.');
                 return;
             }
