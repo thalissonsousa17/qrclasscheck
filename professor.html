@@ -82,7 +82,7 @@
     </div>
     
     <!-- QRCode.js Library -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script src="script.js"></script>
     <script>
         // Professor page specific functionality
@@ -138,20 +138,43 @@
             // Create student URL
             const studentUrl = `${window.location.origin}/student.html?session=${sessionData.id}`;
             
-            // Generate QR code
-            QRCode.toCanvas(qrContainer, studentUrl, {
-                width: 256,
-                margin: 2,
-                color: {
-                    dark: '#000000',
-                    light: '#FFFFFF'
+            try {
+                // Generate QR code using qrcode-generator library
+                const qr = qrcode(0, 'M');
+                qr.addData(studentUrl);
+                qr.make();
+                
+                // Create QR code as SVG
+                const qrSvg = qr.createSvgTag({
+                    cellSize: 8,
+                    margin: 4,
+                    scalable: true
+                });
+                
+                // Create container for QR code
+                const qrWrapper = document.createElement('div');
+                qrWrapper.innerHTML = qrSvg;
+                qrWrapper.style.display = 'flex';
+                qrWrapper.style.justifyContent = 'center';
+                qrWrapper.style.alignItems = 'center';
+                
+                // Style the SVG
+                const svg = qrWrapper.querySelector('svg');
+                if (svg) {
+                    svg.style.width = '256px';
+                    svg.style.height = '256px';
+                    svg.style.border = '2px solid #dee2e6';
+                    svg.style.borderRadius = '8px';
+                    svg.style.background = 'white';
                 }
-            }, function(error) {
-                if (error) {
-                    console.error('Erro ao gerar QR code:', error);
-                    qrContainer.innerHTML = '<p class="error">Erro ao gerar código QR</p>';
-                }
-            });
+                
+                qrContainer.appendChild(qrWrapper);
+                
+                console.log('QR Code gerado com sucesso');
+            } catch (error) {
+                console.error('Erro ao gerar QR code:', error);
+                qrContainer.innerHTML = '<p class="error">Erro ao gerar código QR</p>';
+            }
             
             // Display session info
             sessionInfo.innerHTML = `
