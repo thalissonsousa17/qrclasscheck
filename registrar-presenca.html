@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Presença - Sistema de Presença QR</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Registrar Presença</h1>
+            <nav>
+                <a href="index.html" class="btn btn-secondary">Voltar ao Início</a>
+                <a href="aluno.html" class="btn btn-secondary">Ver QR (Aluno)</a>
+            </nav>
+        </header>
+
+        <main>
+            <section class="attendance-form-section">
+                <h2>Dados da Sessão</h2>
+                <div id="sessionInfo" class="info-card">
+                    <p>Carregando informações da sessão...</p>
+                </div>
+
+                <div id="registrationForm" style="display: none;">
+                    <h2>Registrar sua Presença</h2>
+                    <div class="form-group">
+                        <label for="studentNameInput">Seu Nome Completo:</label>
+                        <input type="text" id="studentNameInput" placeholder="Digite seu nome">
+                    </div>
+                    <div class="form-group">
+                        <label for="studentIdInput">Sua Matrícula/ID:</label>
+                        <input type="text" id="studentIdInput" placeholder="Digite sua matrícula ou ID">
+                    </div>
+                    <button id="registerPresenceBtn" class="btn btn-primary">Registrar Presença</button>
+                </div>
+                
+                <div id="messageDisplay" class="message-display" style="display: none;">
+                    </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSystem(); 
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('session'); 
+
+            const sessionInfoDiv = document.getElementById('sessionInfo');
+            const registrationFormDiv = document.getElementById('registrationForm');
+            const studentNameInput = document.getElementById('studentNameInput');
+            const studentIdInput = document.getElementById('studentIdInput');
+            const registerPresenceBtn = document.getElementById('registerPresenceBtn');
+            const messageDisplay = document.getElementById('messageDisplay');
+
+            if (!sessionId) {
+                sessionInfoDiv.innerHTML = '<p class="error-message">Erro: ID da sessão não encontrado na URL.</p>';
+                return;
+            }
+
+            const session = getSession(sessionId); 
+            const activeQrSession = getActiveQrSession(); 
+
+            if (session) {
+                const now = new Date();
+                const expiresAt = new Date(session.expiresAt);
+
+                if (now < expiresAt) {
+                    sessionInfoDiv.innerHTML = `
+                        <h3>Sessão Ativa:</h3>
+                        <p><strong>Matéria:</strong> ${session.subject}</p>
+                        <p><strong>Professor:</strong> ${session.professorName}</p>
+                        <p><strong>Expira em:</strong> ${formatDateTime(session.expiresAt)}</p>
+                        <p>ID da Sessão: <code>${session.id}</code></p>
+                    `;
+                    registrationFormDiv.style.display = 'block'; 
+
+                    registerPresenceBtn.addEventListener('click', function() {
+                        const studentName = studentNameInput.value.trim();
+                        const studentId = studentIdInput.value.trim();
+
+                        if (!studentName || !studentId) {
+                            showMessage("Por favor, preencha seu nome e matrícula.", 'error');
+                            return;
+                        }
+
+                        const allAttendances = getAllAttendances();
+                        const alreadyRegistered = allAttendances.some(att => 
+                            att.sessionId === sessionId && att.studentId === studentId
+                        );
+
+                        if (alreadyRegistered) {
+                            showMessage("Você já registrou presença para esta sessão.", 'warning');
+                            return;
+                        }
+
+                        const newAttendance = {
+                            id: generateAttendanceId(), 
+                            sessionId: sessionId,
+                            studentName: studentName,
+                            studentId: studentId,
+                            timestamp: new Date().toISOString()
+                        };
+
+                        saveAttendance(newAttendance); 
+
+                        studentNameInput.value = '';
+                        studentIdInput.value = '';
+
+                        showMessage("Presença registrada com sucesso!", 'success');
+                    });
+
+                } else {
+                    sessionInfoDiv.innerHTML = '<p class="error-message">Esta sessão de presença expirou. Por favor, solicite um novo QR Code ao professor.</p>';
+                    if (activeQrSession && activeQrSession.sessionId === sessionId) {
+                        removeActiveQrSession(); 
+                    }
+                }
+            } else {
+                sessionInfoDiv.innerHTML = '<p class="error-message">Sessão de presença não encontrada. O código pode ser inválido ou já foi finalizado.</p>';
+                 if (activeQrSession && activeQrSession.sessionId === sessionId) {
+                    removeActiveQrSession(); 
+                }
+            }
+        });
+
+        function showMessage(msg, type) {
+            const messageDisplay = document.getElementById('messageDisplay');
+            messageDisplay.textContent = msg;
+            messageDisplay.className = `message-display ${type}`; 
+            messageDisplay.style.display = 'block';
+
+            setTimeout(() => {
+                messageDisplay.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

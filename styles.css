@@ -22,7 +22,7 @@ body {
 
 /* Header Styles */
 header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg,#cbcbcf 0%, #1f2130  100%);
     color: white;
     padding: 2rem;
     border-radius: 12px;
@@ -43,17 +43,17 @@ header p {
 
 nav {
     margin-top: 1rem;
-    display: flex;
+    display: grid;
     gap: 1rem;
     flex-wrap: wrap;
 }
 
-/* Button Styles */
+/* Button Styles - Cor padrão para todos os botões .btn */
 .btn {
     display: inline-block;
     padding: 0.75rem 1.5rem;
     border: none;
-    border-radius: 8px;
+    border-radius: 2px;
     text-decoration: none;
     font-weight: 600;
     font-size: 1rem;
@@ -61,35 +61,24 @@ nav {
     transition: all 0.3s ease;
     text-align: center;
     line-height: 1.5;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* Cor padrão para todos os botões */
+    background: linear-gradient(135deg, #020964 0%, #768083 100%); /* Cor primária */
     color: white;
 }
 
-.btn-primary:hover {
+.btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 12px rgba(177, 177, 180, 0.4);
 }
 
-.btn-secondary {
-    background: #6c757d;
-    color: white;
-}
-
-.btn-secondary:hover {
-    background: #5a6268;
-    transform: translateY(-2px);
-}
-
+/* Mantenha o btn-danger para o botão de limpar tudo, se quiser que ele se destaque */
 .btn-danger {
-    background: #dc3545;
+    background: linear-gradient(135deg, #020964 0%, #768083 100%);
     color: white;
 }
 
 .btn-danger:hover {
-    background: #c82333;
+    background: #7c1c25;
     transform: translateY(-2px);
 }
 
@@ -97,6 +86,7 @@ nav {
 .home-content {
     text-align: center;
 }
+
 
 .role-selection {
     display: grid;
@@ -221,8 +211,8 @@ nav {
 .info-card {
     background: #f8f9fa;
     padding: 1.5rem;
-    border-radius: 12px;
     border-left: 4px solid #667eea;
+    border-radius: 12px;
 }
 
 .info-card h3 {
@@ -390,72 +380,86 @@ nav {
 }
 
 /* Attendance List Styles */
-.controls-section {
+.filters-section {
     background: white;
-    padding: 2rem;
+    padding: 2.5rem;
     border-radius: 16px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
     margin-bottom: 2rem;
 }
-
-.filters {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.filter-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.filter-group label {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #333;
-}
-
-.filter-group input,
-.filter-group select {
-    padding: 0.75rem;
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
-    font-size: 1rem;
-}
-
-.actions {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-.summary-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
+.filters-section h2 {
     margin-bottom: 2rem;
+    color: #333;
+    font-size: 1.8rem;
 }
 
-.summary-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 1.5rem;
-    border-radius: 12px;
+/* CONTÊINER PARA OS FILTROS */
+.filter-controls-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+    align-items: end;
+}
+
+/* CONTÊINER PARA AS AÇÕES E TOTAL DE PRESENÇAS */
+.action-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    align-items: center;
+    margin-top: 20px;
+}
+
+/* Garante que todos os itens no grid de ações tenham altura e largura consistentes */
+.action-summary-grid .btn { /* Apenas os botões, o total attendances card foi movido */
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0.75rem 1rem;
     text-align: center;
 }
 
-.summary-card h3 {
-    font-size: 1rem;
-    margin-bottom: 0.5rem;
-    opacity: 0.9;
+/* --- NOVOS ESTILOS PARA A SEÇÃO DE CARDS DE SUMÁRIO --- */
+.summary-cards-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Ajuste o minwidth para o tamanho desejado */
+    gap: 20px; /* Espaçamento entre os cards */
+    margin-bottom: 2rem; /* Espaço abaixo da seção de cards */
 }
 
-.summary-value {
-    font-size: 2.5rem;
-    font-weight: bold;
+.summary-card {
+    background:linear-gradient(135deg, #020964 0%, #768083 100%);
+    color: white;
+    padding: 1.5rem; /* Padding interno do card */
+    border-radius: 12px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    min-height: 100px; /* Altura mínima para padronizar os cards */
+    display: flex; /* Para centralizar conteúdo verticalmente */
+    flex-direction: column; /* Para empilhar h3 e p */
+    justify-content: center; /* Centraliza conteúdo verticalmente */
+    align-items: center; /* Centraliza conteúdo horizontalmente */
 }
+
+.summary-card h3 {
+    margin: 0;
+    font-size: 1em; /* Tamanho da fonte do título do card */
+    opacity: 0.9;
+    margin-bottom: 0.5rem; /* Espaço entre o título e o número */
+}
+
+.summary-card p {
+    margin: 0;
+    font-size: 2.2em; /* Tamanho da fonte do número principal */
+    font-weight: bold;
+    line-height: 1; /* Garante que não haja espaço extra na linha */
+}
+/* --- FIM DOS NOVOS ESTILOS --- */
+
 
 .session-card {
     background: white;
@@ -465,118 +469,68 @@ nav {
     overflow: hidden;
 }
 
-.session-header {
+.sessions-grid {
     display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 1rem;
-    padding: 2rem;
-    border-bottom: 1px solid #e9ecef;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
 }
 
-.session-info h3 {
+.session-card h3 {
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
     color: #333;
+    padding: 2rem 2rem 0 2rem;
 }
 
-.professor-name,
-.session-date {
+.session-card p {
+    padding: 0 2rem;
+    margin-bottom: 0.5rem;
     color: #666;
-    margin-bottom: 0.25rem;
 }
 
-.session-status {
+.status {
     display: inline-block;
     padding: 0.25rem 0.75rem;
     border-radius: 12px;
     font-size: 0.875rem;
     font-weight: 600;
     text-transform: uppercase;
+    margin-left: 10px;
 }
 
-.session-status.active {
+.status.active {
     background: #d4edda;
     color: #155724;
 }
 
-.session-status.expired {
+.status.expired {
     background: #f8d7da;
     color: #721c24;
 }
 
-.session-stats {
-    display: flex;
-    gap: 1rem;
-}
-
-.stat {
-    text-align: center;
-}
-
-.stat-value {
-    display: block;
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #667eea;
-}
-
-.stat-label {
-    font-size: 0.875rem;
-    color: #666;
-}
-
-.attendances-list {
+.attendance-details {
     padding: 2rem;
 }
 
-.attendances-list h4 {
+.attendance-details h4 {
     margin-bottom: 1rem;
     color: #333;
 }
 
-.attendances-table {
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid #e9ecef;
+.attendance-details ul {
+    list-style: none;
+    padding: 0;
 }
 
-.table-header {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
+.attendance-details li {
     background: #f8f9fa;
-    padding: 1rem;
-    font-weight: 600;
-    color: #333;
-    border-bottom: 1px solid #e9ecef;
-}
-
-.table-row {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
-    padding: 1rem;
-    border-bottom: 1px solid #f8f9fa;
-}
-
-.table-row:last-child {
-    border-bottom: none;
-}
-
-.table-row:hover {
-    background: #f8f9fa;
-}
-
-.student-name {
-    font-weight: 600;
-    color: #333;
-}
-
-.student-id {
-    color: #666;
-    font-family: 'Courier New', monospace;
-}
-
-.attendance-time {
-    color: #666;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
 }
 
 .no-attendances {
@@ -587,6 +541,14 @@ nav {
 }
 
 /* Responsive Design */
+@media (max-width: 992px) {
+    .filter-controls-grid,
+    .action-summary-grid,
+    .summary-cards-section { /* Adicionado para responsividade dos novos cards */
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+}
+
 @media (max-width: 768px) {
     .container {
         padding: 10px;
@@ -618,34 +580,21 @@ nav {
         text-align: center;
     }
     
-    .session-stats {
-        justify-content: center;
-    }
-    
-    .table-header,
-    .table-row {
+    .filter-controls-grid,
+    .action-summary-grid,
+    .summary-cards-section { /* Adicionado para responsividade dos novos cards */
         grid-template-columns: 1fr;
-        gap: 0.5rem;
+        gap: 10px;
+    }
+    .filter-controls-grid .form-group,
+    .action-summary-grid .btn,
+    .summary-cards-section .summary-card { /* Adicionado para limitar largura em telas pequenas */
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
     }
     
-    .table-header span,
-    .table-row span {
-        padding: 0.25rem 0;
-    }
-    
-    .table-header span {
-        font-size: 0.875rem;
-    }
-    
-    .filters {
-        grid-template-columns: 1fr;
-    }
-    
-    .actions {
-        flex-direction: column;
-    }
-    
-    .summary-cards {
+    .sessions-grid {
         grid-template-columns: 1fr;
     }
 }
@@ -689,8 +638,9 @@ nav {
     }
     
     nav,
-    .actions,
-    .controls-section {
+    .filter-controls-grid,
+    .action-summary-grid,
+    .summary-cards-section { /* Oculta os novos cards na impressão */
         display: none;
     }
     
@@ -732,23 +682,29 @@ select:focus {
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
-    .btn-primary {
+    .btn {
         background: #000;
         border: 2px solid #000;
+        color: #fff;
     }
     
-    .btn-secondary {
+    .btn-danger {
         background: #666;
         border: 2px solid #666;
     }
     
-    .session-status.active {
+    .status.active {
         background: #000;
         color: #fff;
     }
     
-    .session-status.expired {
+    .status.expired {
         background: #666;
+        color: #fff;
+    }
+    .summary-card { /* Ajuste para o card de alto contraste */
+        background: #000;
+        border: 2px solid #000;
         color: #fff;
     }
 }

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Área do Aluno - Sistema de Presença QR</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Área do Aluno</h1>
+            <nav>
+                <a href="index.html" class="btn btn-secondary">Voltar ao Início</a>
+            </nav>
+        </header>
+
+        <main>
+            <section class="aluno-section">
+                <h2>Registrar presença via código QR</h2>
+                <p>Escaneie o código QR fornecido pelo professor</p>
+
+                <div id="activeQrCodeContainer" class="qr-code-display-area" style="text-align: center; margin-top: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
+                    <p id="qrCodeStatus" style="font-weight: bold; color: #555;">Nenhum QR Code ativo no momento.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        let expirationCheckInterval = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSystem(); 
+
+            const qrCodeStatus = document.getElementById('qrCodeStatus');
+            const activeQrCodeContainer = document.getElementById('activeQrCodeContainer');
+
+            function renderActiveQrCode() {
+                const activeSession = getActiveQrSession();
+                
+                activeQrCodeContainer.innerHTML = '';
+                qrCodeStatus.textContent = 'Nenhum QR Code ativo no momento.';
+                
+                if (activeSession) {
+                    try {
+                        const expiresAt = new Date(activeSession.expiresAt);
+                        const now = new Date();
+
+                        if (expiresAt > now) {
+                            qrCodeStatus.textContent = 'QR Code Ativo!';
+                            
+                            const qrCodeElement = document.createElement('div');
+                            qrCodeElement.id = 'qrcodeCanvasStudent';
+                            qrCodeElement.style.margin = '15px auto';
+                            activeQrCodeContainer.appendChild(qrCodeElement);
+
+                            new QRCode(qrCodeElement, {
+                                text: activeSession.qrCodeLink, 
+                                width: 200,
+                                height: 200,
+                                colorDark : "#000000",
+                                colorLight : "#ffffff",
+                                correctLevel : QRCode.CorrectLevel.H
+                            });
+
+                            const infoParagraph = document.createElement('p');
+                            infoParagraph.style.marginTop = '10px';
+                            infoParagraph.innerHTML = `
+                                <strong>Matéria:</strong> ${activeSession.subject}<br>
+                                <strong>Professor:</strong> ${activeSession.professorName}<br>
+                                <strong>Expira em:</strong> <span id="timeRemaining" style="font-weight: bold; color: #e74c3c;"></span>
+                            `;
+                            activeQrCodeContainer.appendChild(infoParagraph);
+                            
+                            startExpirationTimer(expiresAt);
+
+                        } else {
+                            removeActiveQrSession(); 
+                            qrCodeStatus.textContent = 'Nenhum QR Code ativo no momento (O último expirou).';
+                            stopExpirationTimer(); 
+                        }
+                    } catch (e) {
+                        console.error("Erro ao parsear dados da sessão QR ativa:", e);
+                        removeActiveQrSession(); 
+                        qrCodeStatus.textContent = 'Nenhum QR Code ativo no momento (erro nos dados).';
+                        stopExpirationTimer();
+                    }
+                } else {
+                    stopExpirationTimer();
+                }
+            }
+
+            function startExpirationTimer(expiresAt) {
+                stopExpirationTimer(); 
+
+                const timeRemainingSpan = document.getElementById('timeRemaining');
+                if (!timeRemainingSpan) return; 
+
+                function updateTimer() {
+                    const now = new Date();
+                    const diffMs = expiresAt.getTime() - now.getTime();
+
+                    if (diffMs <= 0) {
+                        timeRemainingSpan.textContent = 'Expirado!';
+                        removeActiveQrSession(); 
+                        renderActiveQrCode(); 
+                        stopExpirationTimer();
+                        return;
+                    }
+
+                    const totalSeconds = Math.floor(diffMs / 1000);
+                    const minutes = Math.floor(totalSeconds / 60);
+                    const seconds = totalSeconds % 60;
+
+                    timeRemainingSpan.textContent = `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
+                }
+
+                expirationCheckInterval = setInterval(updateTimer, 1000); 
+                updateTimer(); 
+            }
+
+            function stopExpirationTimer() {
+                if (expirationCheckInterval) {
+                    clearInterval(expirationCheckInterval);
+                    expirationCheckInterval = null;
+                }
+            }
+
+            renderActiveQrCode();
+
+            window.addEventListener('storage', function(event) {
+                if (event.key === 'currentActiveQrSession') {
+                    console.log("LocalStorage 'currentActiveQrSession' alterado, re-renderizando QR Code.");
+                    renderActiveQrCode();
+                }
+            });
+            
+        }); 
+    </script>
+</body>
+</html>

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presenças - Sistema de Presença QR</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Registro de Presenças</h1>
+            <nav>
+                <a href="index.html" class="btn btn-secondary">Voltar ao Início</a>
+                <a href="professor.html" class="btn btn-secondary">Painel Professor</a>
+            </nav>
+        </header>
+
+        <main>
+            <section class="filters-section">
+                <h2>Filtros</h2>
+                
+                <div class="filter-controls-grid">
+                    <div class="form-group">
+                        <label for="filterSubject">Filtrar por Matéria:</label>
+                        <select id="filterSubject">
+                            <option value="">Todas as matérias</option>
+                            </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filterProfessor">Filtrar por Professor:</label>
+                        <select id="filterProfessor">
+                            <option value="">Todos os professores</option>
+                            </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filterDate">Filtrar por Data:</label>
+                        <input type="date" id="filterDate">
+                    </div>
+                </div>
+
+                <div class="action-summary-grid">
+                    <button id="clearFiltersBtn" class="btn">Limpar Filtros</button>
+                    <button id="exportTxtBtn" class="btn">Exportar para Bloco de Notas (.txt)</button>
+                    <button id="clearAllDataBtn" class="btn btn-danger">Limpar Todos os Dados</button>
+                    <div class="summary-card total-attendances-card">
+                        <h3>Total de Presenças</h3>
+                        <p id="totalAttendances">0</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="attendance-list-section">
+                <h2>Sessões Ativas / Finalizadas</h2>
+                <div id="sessionsContainer" class="sessions-grid">
+                    <p>Nenhuma sessão registrada ainda.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSystem(); 
+            renderAttendanceDashboard();
+
+            document.getElementById('filterSubject').addEventListener('change', renderAttendanceDashboard);
+            document.getElementById('filterProfessor').addEventListener('change', renderAttendanceDashboard);
+            document.getElementById('filterDate').addEventListener('change', renderAttendanceDashboard);
+            document.getElementById('clearFiltersBtn').addEventListener('click', clearFilters);
+
+            document.getElementById('exportTxtBtn').addEventListener('click', exportAttendancesAsTxt);
+
+            document.getElementById('clearAllDataBtn').addEventListener('click', clearAllData);
+        });
+
+        function renderAttendanceDashboard() {
+            const allSessions = getAllSessions();
+            const allAttendances = getAllAttendances();
+
+            let filteredSessions = allSessions;
+            let filteredAttendances = allAttendances;
+
+            const filterSubject = document.getElementById('filterSubject').value;
+            const filterProfessor = document.getElementById('filterProfessor').value;
+            const filterDate = document.getElementById('filterDate').value;
+
+            populateFilterOptions(allSessions, allAttendances);
+
+            if (filterSubject) {
+                filteredSessions = filteredSessions.filter(session => session.subject === filterSubject);
+                filteredAttendances = filteredAttendances.filter(att => 
+                    filteredSessions.some(sess => sess.id === att.sessionId)
+                );
+            }
+            if (filterProfessor) {
+                filteredSessions = filteredSessions.filter(session => session.professorName === filterProfessor);
+                filteredAttendances = filteredAttendances.filter(att => 
+                    filteredSessions.some(sess => sess.id === att.sessionId)
+                );
+            }
+            if (filterDate) {
+                const selectedDate = new Date(filterDate).toISOString().split('T')[0];
+                filteredSessions = filteredSessions.filter(session => 
+                    new Date(session.createdAt).toISOString().split('T')[0] === selectedDate
+                );
+                filteredAttendances = filteredAttendances.filter(att => 
+                    new Date(att.timestamp).toISOString().split('T')[0] === selectedDate
+                );
+            }
+
+            document.getElementById('totalAttendances').textContent = filteredAttendances.length;
+
+            const sessionsContainer = document.getElementById('sessionsContainer');
+            sessionsContainer.innerHTML = ''; 
+
+            if (filteredSessions.length === 0) {
+                sessionsContainer.innerHTML = '<p>Nenhuma sessão encontrada com os filtros aplicados.</p>';
+                return;
+            }
+
+            filteredSessions.forEach(session => {
+                const sessionAttendances = allAttendances.filter(att => att.sessionId === session.id);
+                const sessionCard = document.createElement('div');
+                sessionCard.classList.add('session-card');
+                
+                const isExpired = new Date() > new Date(session.expiresAt);
+                const expirationStatus = isExpired ? '<span class="status expired">Expirada</span>' : `<span class="status active">Ativa (restam ${getTimeRemaining(session.expiresAt)})</span>`;
+
+                sessionCard.innerHTML = `
+                    <h3>${session.subject} ${expirationStatus}</h3>
+                    <p>Professor: <strong>${session.professorName}</strong></p>
+                    <p>Criada em: ${formatDateTime(session.createdAt)}</p>
+                    <p>Validade: ${session.validity} minutos</p>
+                    <p>ID da Sessão: <code>${session.id}</code></p>
+                    <p>Total de Presenças: <strong>${sessionAttendances.length}</strong></p>
+                    <div class="attendance-details">
+                        <h4>Detalhes das Presenças:</h4>
+                        ${sessionAttendances.length > 0 ? 
+                            `<ul>${sessionAttendances.map(att => `
+                                <li>
+                                    <strong>${att.studentName}</strong> (${att.studentId}) - ${formatDateTime(att.timestamp)}
+                                </li>`).join('')}
+                            </ul>` : '<p>Nenhuma presença registrada para esta sessão ainda.</p>'
+                        }
+                    </div>
+                `;
+                sessionsContainer.appendChild(sessionCard);
+            });
+        }
+
+        function populateFilterOptions(sessions, attendances) {
+            const subjectSelect = document.getElementById('filterSubject');
+            const professorSelect = document.getElementById('filterProfessor');
+
+            const selectedSubject = subjectSelect.value;
+            const selectedProfessor = professorSelect.value;
+
+            subjectSelect.innerHTML = '<option value="">Todas as matérias</option>';
+            professorSelect.innerHTML = '<option value="">Todos os professores</option>';
+
+            const uniqueSubjects = new Set();
+            const uniqueProfessors = new Set();
+
+            sessions.forEach(session => {
+                uniqueSubjects.add(session.subject);
+                uniqueProfessors.add(session.professorName);
+            });
+
+            Array.from(uniqueSubjects).sort().forEach(subject => {
+                const option = document.createElement('option');
+                option.value = subject;
+                option.textContent = subject;
+                subjectSelect.appendChild(option);
+            });
+
+            Array.from(uniqueProfessors).sort().forEach(professor => {
+                const option = document.createElement('option');
+                option.value = professor;
+                option.textContent = professor;
+                professorSelect.appendChild(option);
+            });
+
+            subjectSelect.value = selectedSubject;
+            professorSelect.value = selectedProfessor;
+        }
+
+        function clearFilters() {
+            document.getElementById('filterSubject').value = '';
+            document.getElementById('filterProfessor').value = '';
+            document.getElementById('filterDate').value = '';
+            renderAttendanceDashboard();
+        }
+
+        function getTimeRemaining(expiresAtIso) {
+            const expiresAt = new Date(expiresAtIso);
+            const now = new Date();
+            const diffMs = expiresAt - now;
+
+            if (diffMs <= 0) {
+                return '0m 0s';
+            }
+
+            const minutes = Math.floor(diffMs / (1000 * 60));
+            const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+            return `${minutes}m ${seconds}s`;
+        }
+        
+        function clearAllData() {
+            if (confirm("ATENÇÃO: Isso limpará TODAS as sessões e presenças registradas. Tem certeza?")) {
+                localStorage.removeItem('attendanceSessions');
+                localStorage.removeItem('attendanceRecords');
+                initializeSystem();
+                renderAttendanceDashboard();
+                alert("Todos os dados foram limpos com sucesso!");
+            }
+        }
+
+        function exportAttendancesAsTxt() {
+            const allAttendances = getAllAttendances();
+            const allSessions = getAllSessions();
+
+            if (allAttendances.length === 0) {
+                alert("Não há presenças registradas para exportar.");
+                return;
+            }
+
+            let txtContent = "Sistema de Presença QR - Relatório de Presenças\n";
+            txtContent += `Data de Exportação: ${formatDateTime(new Date().toISOString())}\n\n`;
+
+            txtContent += "ID da Presenca     | ID da Sessao     | Materia            | Professor             | Nome do Aluno               | Matricula | Data/Hora do Registro\n";
+            txtContent += "----------------------------------------------------------------------------------------------------------------------------------------------------------\n";
+
+            allAttendances.forEach(attendance => {
+                const session = allSessions.find(s => s.id === attendance.sessionId) || {};
+                const subject = session.subject || 'N/A';
+                const professorName = session.professorName || 'N/A';
+                const formattedTimestamp = formatDateTime(attendance.timestamp);
+
+                txtContent += `${attendance.id.padEnd(17)} | ${attendance.sessionId.padEnd(16)} | ${subject.padEnd(18)} | ${professorName.padEnd(23)} | ${attendance.studentName.padEnd(27)} | ${attendance.studentId.padEnd(9)} | ${formattedTimestamp}\n`;
+            });
+
+            const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
+            
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `presencas_exportadas_${new Date().toISOString().split('T')[0]}.txt`;
+
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            alert("Dados exportados como 'presencas_exportadas.txt'!");
+        }
+
+    </script>
+</body>
+</html>
